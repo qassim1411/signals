@@ -1,0 +1,40 @@
+# ضع هذا الملف في المستودع على المسار:  .github/workflows/signals.yml
+name: trading-signals
+
+on:
+  schedule:
+    - cron: "30 12 * * 0-4"   # 12:30 UTC = 15:30 بتوقيت السعودية — بعد إغلاق تداول (الأحد–الخميس)
+    - cron: "30 21 * * 1-5"   # 21:30 UTC = 00:30 بتوقيت السعودية — بعد إغلاق السوق الأمريكية
+    - cron: "30 0 * * *"      # 00:30 UTC — بعد إغلاق الشمعة اليومية للعملات الرقمية
+  workflow_dispatch:          # يسمح بالتشغيل اليدوي من تبويب Actions
+
+permissions:
+  contents: write             # لحفظ ملف alerts_state.json (منع تكرار الإشعارات)
+
+jobs:
+  signals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install yfinance pandas numpy
+
+      - name: Run signals
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        # ← عدّل الرموز (ما تملكه أو تتابعه) والسوق الذي تريد مسحه ورأس المال هنا
+        run: python signal_tool.py AAPL 2222.SR BTC-USD --scan all --capital 50000 --json docs/data.json
+
+      - name: Save alert state and app data
+        run: |
+          git config user.name "signal-bot"
+          git config user.email "signal-bot@users.noreply.github.com"
+          git add alerts_state.json docs/data.json
+          git commit -m "update alert state" || echo "no changes"
+          git push || echo "nothing to push"
