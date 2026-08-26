@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>إشارات التداول</title>
+<meta name="theme-color" content="#14202B">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F3F5F7; --surface:#FFFFFF; --ink:#14202B; --muted:#6B7A88; --line:#DDE3E9;
+    --up:#0E9F6E; --down:#D64545; --hold:#D9A21B; --wait:#5B6B7B;
+    --sans:"IBM Plex Sans Arabic","Segoe UI","Noto Sans Arabic",system-ui,sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-text-size-adjust:100%}
+  body{padding-bottom:max(24px,env(safe-area-inset-bottom))}
+  a{color:inherit}
+  .num{font-family:var(--mono);font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+
+  header.top{display:flex;align-items:center;justify-content:space-between;padding:14px 18px 10px}
+  header.top h1{font-size:15px;font-weight:700;margin:0;letter-spacing:.2px}
+  header.top .when{font-size:12px;color:var(--muted)}
+  header.top button{background:none;border:1px solid var(--line);border-radius:999px;padding:6px 12px;font:inherit;font-size:12px;color:var(--ink);cursor:pointer}
+  header.top button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+  /* ── الشريط: الجواب الواحد لليوم ── */
+  .strip{margin:0 12px;border-radius:18px;padding:22px 20px 20px;color:#fff;background:var(--wait);
+         display:flex;align-items:flex-end;justify-content:space-between;gap:14px;min-height:118px;
+         box-shadow:0 10px 30px -18px rgba(20,32,43,.55)}
+  .strip.buy{background:var(--up)} .strip.sell{background:var(--down)} .strip.wait{background:var(--wait)}
+  .strip .word{font-size:44px;font-weight:700;line-height:1;margin:0}
+  .strip .why{font-size:13px;opacity:.92;margin:8px 0 0;line-height:1.5}
+  .strip .tag{font-size:11px;letter-spacing:.4px;opacity:.85;white-space:nowrap;padding-bottom:4px}
+
+  section{margin:18px 12px 0}
+  .eyebrow{font-size:12px;color:var(--muted);margin:0 6px 8px;font-weight:500}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .card + .card{margin-top:10px}
+
+  /* رأس المال */
+  .capital{display:flex;align-items:center;gap:10px}
+  .capital label{font-size:13px;color:var(--muted);flex:1}
+  .capital input{width:140px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;font:600 15px var(--mono);
+                 text-align:left;direction:ltr;background:#fff;color:var(--ink)}
+  .capital input:focus-visible{outline:2px solid var(--ink);outline-offset:1px;border-color:var(--ink)}
+  .capital small{display:block;color:var(--muted);font-size:11px;margin-top:6px}
+
+  /* الأسواق */
+  .markets{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 6px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+  .market{flex:0 0 78%;scroll-snap-align:start}
+  .market .name{font-weight:700;font-size:15px;margin:0}
+  .market .regime{display:inline-flex;align-items:center;gap:6px;font-size:12px;margin-top:6px;color:var(--muted)}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--wait);display:inline-block}
+  .dot.up{background:var(--up)} .dot.down{background:var(--down)} .dot.mid{background:var(--hold)}
+  .breadth{margin-top:12px}
+  .breadth .bar{height:6px;border-radius:999px;background:#E9EDF1;overflow:hidden}
+  .breadth .bar i{display:block;height:100%;background:var(--up);width:0;transition:width .6s ease}
+  .breadth .lbl{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:5px}
+  .advice{font-size:12.5px;line-height:1.55;margin:12px 0 0;padding-top:10px;border-top:1px dashed var(--line)}
+
+  /* أفضل صفقة: سلّم الأسعار */
+  .trade .head{display:flex;justify-content:space-between;align-items:baseline}
+  .trade .ticker{font:700 22px var(--mono);letter-spacing:-.3px}
+  .trade .score{font-size:12px;color:var(--muted)}
+  .trade .score b{color:var(--ink);font-family:var(--mono)}
+  .ladder{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:8px;margin:14px 0 10px;direction:rtl}
+  .ladder div{border-radius:12px;padding:10px 6px;text-align:center;background:#F7F9FB}
+  .ladder .k{font-size:11px;color:var(--muted);margin-bottom:4px}
+  .ladder .v{font:600 17px var(--mono);direction:ltr}
+  .ladder .stop{background:#FCEEEE} .ladder .stop .v{color:var(--down)}
+  .ladder .target{background:#E9F7F1} .ladder .target .v{color:var(--up)}
+  .ladder .entry{background:var(--ink);color:#fff} .ladder .entry .k{color:#C8D0D8}
+  .qty{font-size:13px;margin:0;color:var(--ink)}
+  .qty .num{font-weight:600}
+  .plan{font-size:12.5px;line-height:1.6;color:var(--ink);margin:12px 0 0;padding-top:10px;border-top:1px dashed var(--line)}
+  .plan b{font-weight:700}
+  .reasons{margin:10px 0 0;padding:0;list-style:none;font-size:12px;color:var(--muted);line-height:1.6}
+  .reasons li::before{content:"·";margin-left:6px;color:var(--ink)}
+  .alts{margin-top:12px;border-top:1px dashed var(--line);padding-top:10px}
+  .alts .row{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:6px 0}
+  .alts .row + .row{border-top:1px solid #F0F3F6}
+  .alts .t{font:600 13px var(--mono)}
+  .alts .lv{color:var(--muted);font-size:11.5px}
+  .noBuy{color:var(--muted);font-size:13px;line-height:1.6;margin:0}
+  .watch{margin:8px 0 0;padding:0;list-style:none}
+  .watch li{display:flex;justify-content:space-between;font-size:12.5px;padding:6px 0;border-top:1px solid #F0F3F6}
+  .watch li:first-child{border-top:0}
+
+  /* المتابعة */
+  .track{display:flex;gap:12px;align-items:flex-start}
+  .track .chip{flex:0 0 auto;font-size:12px;font-weight:700;color:#fff;border-radius:8px;padding:5px 9px;background:var(--wait);min-width:58px;text-align:center}
+  .chip.buy{background:var(--up)} .chip.sell{background:var(--down)} .chip.hold{background:var(--hold)} .chip.wait{background:var(--wait)}
+  .track .body{flex:1;min-width:0}
+  .track .t{font:700 15px var(--mono);direction:ltr;text-align:right}
+  .track .d{font-size:12.5px;line-height:1.55;margin:4px 0 0;white-space:pre-line;color:var(--ink)}
+  .track .v{font-size:11.5px;color:var(--muted);margin-top:6px}
+
+  .empty{text-align:center;color:var(--muted);font-size:13px;line-height:1.7;padding:26px 14px}
+  .empty code{font-family:var(--mono);background:#EEF1F4;padding:2px 6px;border-radius:6px;direction:ltr;unicode-bidi:isolate}
+  footer{margin:24px 18px 0;font-size:11.5px;color:var(--muted);line-height:1.6;text-align:center}
+
+  .fade{animation:fade .35s ease both}
+  @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.fade{animation:none}.breadth .bar i{transition:none}}
+  @media (min-width:640px){body{max-width:560px;margin:0 auto}}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>إشارات التداول</h1>
+  <span class="when" id="when">—</span>
+  <button id="refresh" type="button">تحديث</button>
+</header>
+
+<div class="strip wait fade" id="strip">
+  <div><p class="word" id="stripWord">…</p><p class="why" id="stripWhy">جارٍ التحميل</p></div>
+  <span class="tag">قرار اليوم</span>
+</div>
+
+<section>
+  <div class="card capital">
+    <label for="capital">رأس المال الذي تتداول به (يُحفظ على هاتفك فقط)</label>
+    <input id="capital" type="number" inputmode="numeric" min="0" step="100" placeholder="50000">
+  </div>
+</section>
+
+<section id="marketsSec" hidden>
+  <p class="eyebrow">حالة الأسواق</p>
+  <div class="markets" id="markets"></div>
+</section>
+
+<section id="bestSec" hidden>
+  <p class="eyebrow">أفضل صفقة</p>
+  <div id="best"></div>
+</section>
+
+<section id="trackSec" hidden>
+  <p class="eyebrow">أسهمك المتابعة</p>
+  <div id="tracked"></div>
+</section>
+
+<section id="emptySec" hidden>
+  <div class="card empty" id="emptyMsg"></div>
+</section>
+
+<footer>قرارات مبنية على قواعد وإدارة مخاطر، وليست ضمانًا للربح. التزم بوقف الخسارة دائمًا.</footer>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const store = {
+    get(){ try { return localStorage.getItem('capital'); } catch(e){ return null; } },
+    set(v){ try { localStorage.setItem('capital', v); } catch(e){} }
+  };
+  const fmt = (x) => {
+    if (x === null || x === undefined || isNaN(x)) return '—';
+    const a = Math.abs(x);
+    if (a >= 1000) return x.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+    if (a >= 1) return x.toFixed(2);
+    return x.toFixed(4);
+  };
+  const pct = (x, d=0) => (x === null || x === undefined) ? '—' : (x > 0 ? '+' : '') + Number(x).toFixed(d) + '%';
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const chipClass = { 'شراء':'buy', 'بيع':'sell', 'احتفاظ':'hold', 'انتظار':'wait' };
+
+  let data = null;
+  const capitalInput = $('capital');
+  capitalInput.value = store.get() || '';
+  capitalInput.addEventListener('input', () => { store.set(capitalInput.value); render(); });
+  $('refresh').addEventListener('click', load);
+
+  function capital(){ const v = parseFloat(capitalInput.value); return isFinite(v) && v > 0 ? v : 0; }
+  function qtyFor(c){
+    const cap = capital();
+    if (!cap || !c || !c.entry || !c.stop || c.entry <= c.stop) return null;
+    const risk = (data && data.risk_pct) ? data.risk_pct : 1;
+    const mult = c._mult == null ? 1 : c._mult;
+    if (mult <= 0) return 0;
+    let q = cap * mult * risk / 100 / (c.entry - c.stop);
+    q = Math.min(q, cap * mult / c.entry);
+    return c.fractional ? Math.round(q * 10000) / 10000 : Math.floor(q);
+  }
+
+  async function load(){
+    $('stripWhy').textContent = 'جارٍ التحميل…';
+    try {
+      const r = await fetch('data.json?t=' + Date.now(), {cache:'no-store'});
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      data = await r.json();
+    } catch (e) {
+      data = null;
+    }
+    render();
+  }
+
+  function render(){
+    const strip = $('strip'), word = $('stripWord'), why = $('stripWhy');
+    ['marketsSec','bestSec','trackSec','emptySec'].forEach(id => $(id).hidden = true);
+    if (!data) {
+      strip.className = 'strip wait';
+      word.textContent = 'لا بيانات';
+      why.textContent = 'لم تُنشر نتائج بعد';
+      $('when').textContent = '—';
+      $('emptySec').hidden = false;
+      $('emptyMsg').innerHTML = 'شغّل الأداة مع <code>--json docs/data.json</code> أو انتظر التشغيل التلقائي المجدول، ثم اضغط «تحديث».';
+      return;
+    }
+    // الوقت
+    try { $('when').textContent = new Date(data.updated).toLocaleString('ar-SA-u-nu-latn', {dateStyle:'medium', timeStyle:'short'}); }
+    catch(e){ $('when').textContent = data.updated || '—'; }
+
+    const tracked = data.tracked || [], scans = data.scans || [];
+    scans.forEach(s => { if (s.best) s.best._mult = s.mult; (s.alternatives||[]).forEach(a => a._mult = s.mult); });
+
+    // ── الشريط ──
+    const sells = tracked.filter(t => t.decision === 'بيع');
+    const buys  = tracked.filter(t => t.decision === 'شراء');
+    const bestBuy = scans.filter(s => s.best && s.mult > 0).sort((a,b) => b.best.score - a.best.score)[0];
+    if (sells.length) {
+      strip.className = 'strip sell';
+      word.textContent = 'بيع';
+      why.textContent = sells.map(t => t.name).join('، ') + ' — أغلق الصفقة وفق التفاصيل أدناه';
+    } else if (buys.length || bestBuy) {
+      strip.className = 'strip buy';
+      word.textContent = 'شراء';
+      const n = buys.length ? buys[0].name : bestBuy.best.name;
+      why.textContent = n + (bestBuy && !buys.length ? ' — أفضل صفقة في ' + bestBuy.label : ' — إشارة جديدة على سهم تتابعه');
+    } else {
+      strip.className = 'strip wait';
+      word.textContent = 'انتظار';
+      const holds = tracked.filter(t => t.decision === 'احتفاظ').length;
+      why.textContent = holds ? 'لا إشارة جديدة — احتفظ بصفقاتك المفتوحة ولا تحرّك الوقف' : 'لا إشارة دخول جديدة اليوم؛ الأفضل ألا تتداول';
+    }
+    strip.classList.add('fade');
+
+    // ── الأسواق ──
+    if (scans.length) {
+      $('marketsSec').hidden = false;
+      $('markets').innerHTML = scans.map(s => {
+        const rg = s.regime, lab = rg ? rg.label : 'غير معروفة';
+        const cls = lab === 'صاعد' ? 'up' : lab === 'هابط' ? 'down' : rg ? 'mid' : '';
+        const det = rg ? ` · المؤشر ${rg.above200 ? 'فوق' : 'تحت'} EMA200 · <span class="num">${pct(rg.ret20,1)}</span> في 20 يومًا` : '';
+        return `<div class="card market">
+          <p class="name">${esc(s.label)}</p>
+          <div class="regime"><span class="dot ${cls}"></span>${esc(lab)}${det}</div>
+          <div class="breadth"><div class="bar"><i style="width:${Math.max(0,Math.min(100,s.breadth))}%"></i></div>
+            <div class="lbl"><span>في اتجاه صاعد</span><span class="num">${Number(s.breadth).toFixed(0)}% من ${s.n}</span></div></div>
+          <p class="advice">${esc(s.advice)}</p>
+        </div>`;
+      }).join('');
+    }
+
+    // ── أفضل صفقة ──
+    if (scans.length) {
+      $('bestSec').hidden = false;
+      $('best').innerHTML = scans.map(s => {
+        const b = s.best;
+        if (!b) {
+          const w = (s.watch||[]).map(x => `<li><span class="num" style="font-weight:600">${esc(x.name)}</span><span style="color:var(--muted)">إغلاق <span class="num">${fmt(x.close)}</span> · الفجوة <span class="num">${x.gap_atr}</span> ATR</span></li>`).join('');
+          return `<div class="card trade"><div class="head"><span style="font-weight:700">${esc(s.label)}</span></div>
+            <p class="noBuy" style="margin-top:8px">لا إشارة دخول جديدة اليوم في هذا السوق.${w ? ' الأقرب لإشارة شراء:' : ''}</p>
+            ${w ? `<ul class="watch">${w}</ul>` : ''}</div>`;
+        }
+        const q = qtyFor(b), risk = (data.risk_pct || 1);
+        const qtyLine = s.mult <= 0
+          ? `<p class="qty">لا يُنصح بالدخول اليوم — البيئة غير مناسبة</p>`
+          : q === null
+            ? `<p class="qty">أدخل رأس مالك أعلاه لحساب الكمية</p>`
+            : `<p class="qty">الكمية <span class="num">${q}</span> · الخسارة إن ضُرب الوقف ≈ <span class="num">${fmt(q * (b.entry - b.stop))}</span> (${risk}%${s.mult === 0.5 ? '، نصف الحجم' : ''})</p>`;
+        const alts = (s.alternatives||[]).map((a, i) => `<div class="row"><span><span class="t">${esc(a.name)}</span> <span class="lv">درجة <span class="num">${Number(a.score).toFixed(0)}</span></span></span>
+            <span class="lv num">${fmt(a.stop)} / ${fmt(a.entry)} / ${fmt(a.target)}</span></div>`).join('');
+        return `<div class="card trade">
+          <div class="head"><span class="ticker">${esc(b.name)}</span><span class="score">${esc(s.label)} · درجة <b>${Number(b.score).toFixed(0)}</b>/100</span></div>
+          <div class="ladder">
+            <div class="stop"><div class="k">وقف الخسارة</div><div class="v">${fmt(b.stop)}</div></div>
+            <div class="entry"><div class="k">الدخول ≈</div><div class="v">${fmt(b.entry)}</div></div>
+            <div class="target"><div class="k">الهدف</div><div class="v">${fmt(b.target)}</div></div>
+          </div>
+          ${qtyLine}
+          <p class="plan"><b>وقت البيع:</b> عند الهدف${b.win_bars ? ` (تاريخيًا خلال ~<span class="num">${Math.round(b.win_bars)}</span> يوم تداول)` : ''}، أو عند الوقف فورًا، أو عند تقاطع EMA20 تحت EMA50 — أضف الرمز لقائمة المتابعة لتصلك إشارة البيع.</p>
+          <ul class="reasons">${(b.reasons||[]).map(r => `<li>${esc(r)}</li>`).join('')}<li>${esc(b.verdict)}</li></ul>
+          ${alts ? `<div class="alts"><div class="lv" style="margin-bottom:4px">بدائل مرتبة (وقف / دخول / هدف)</div>${alts}</div>` : ''}
+        </div>`;
+      }).join('');
+    }
+
+    // ── المتابعة ──
+    if (tracked.length) {
+      $('trackSec').hidden = false;
+      $('tracked').innerHTML = tracked.map(t => `<div class="card track">
+        <span class="chip ${chipClass[t.decision] || 'wait'}">${esc(t.decision)}</span>
+        <div class="body"><div class="t">${esc(t.name)} <span style="font-weight:500;color:var(--muted);font-size:12px">${fmt(t.close)}</span></div>
+          <p class="d">${esc(t.detail)}</p>
+          <div class="v">${esc(t.verdict)} · فوز <span class="num">${Number(t.perf.win_rate).toFixed(0)}%</span> · عائد <span class="num">${pct(t.perf.total_return)}</span></div></div>
+      </div>`).join('');
+    }
+
+    if (!scans.length && !tracked.length) {
+      $('emptySec').hidden = false;
+      $('emptyMsg').textContent = 'لا نتائج في آخر تشغيل. تأكد من الرموز أو أضف --scan.';
+    }
+  }
+
+  load();
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "name": "إشارات التداول",
+  "short_name": "الإشارات",
+  "description": "تقييم السوق، أفضل صفقة، وإشارات الشراء والبيع",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F3F5F7",
+  "theme_color": "#14202B",
+  "dir": "rtl",
+  "lang": "ar",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
